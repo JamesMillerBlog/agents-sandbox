@@ -9,7 +9,9 @@ try {
     fs.readFileSync(path.join(root, "package.json"), "utf8"),
   );
 } catch (error) {
-  process.stderr.write(`Release check failed: unable to read package.json: ${error.message}\n`);
+  process.stderr.write(
+    `Release check failed: unable to read package.json: ${error.message}\n`,
+  );
   process.exit(1);
 }
 
@@ -43,11 +45,17 @@ function assertCleanSynchronizedMain() {
   if (status) fail("Git worktree is not clean.");
 
   const branch = git(["branch", "--show-current"]);
-  if (branch !== "main") fail(`publication must run from main, not ${branch || "detached HEAD"}.`);
+  if (branch !== "main")
+    fail(`publication must run from main, not ${branch || "detached HEAD"}.`);
 
   let upstream;
   try {
-    upstream = git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]);
+    upstream = git([
+      "rev-parse",
+      "--abbrev-ref",
+      "--symbolic-full-name",
+      "@{upstream}",
+    ]);
   } catch {
     fail("main has no configured upstream.");
   }
@@ -55,7 +63,9 @@ function assertCleanSynchronizedMain() {
   const head = git(["rev-parse", "HEAD"]);
   const upstreamHead = git(["rev-parse", upstream]);
   if (head !== upstreamHead)
-    fail(`HEAD is not synchronized with ${upstream}; pull or push before publishing.`);
+    fail(
+      `HEAD is not synchronized with ${upstream}; pull or push before publishing.`,
+    );
 }
 
 function assertPackageIdentity() {
