@@ -23,9 +23,7 @@ function fixture() {
 }
 
 function linkedFixture() {
-  const root = fs.mkdtempSync(
-    path.join(os.tmpdir(), "agents-sandbox-linked-"),
-  );
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agents-sandbox-linked-"));
   const common = path.join(root, "common.git");
   const linkedGitDir = path.join(common, "worktrees", "feature");
   const gitPointer = path.join(root, ".git");
