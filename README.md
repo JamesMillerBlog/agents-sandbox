@@ -68,6 +68,23 @@ not mount the Herdr socket, pass `HERDR_*` variables into Docker, or grant the
 agent Herdr control. Missing or unavailable Herdr reporting emits a warning and
 does not stop the sandbox run.
 
+Agents Sandbox inherits exported shell variables. With `direnv`, put the opt-in
+in a trusted `.envrc`:
+
+```sh
+export AGENT_SANDBOX_HERDR=1
+export HERDR_PANE_ID=1-1
+```
+
+```sh
+direnv allow
+sandbox pi
+```
+
+A `.env` file is not parsed automatically. If using one, load it explicitly
+from `.envrc` with `dotenv_if_exists .env`, or source a trusted file before
+launching. Do not commit pane identifiers or credentials.
+
 ## Images
 
 The launcher never builds or pulls images automatically. Build the included images locally:
