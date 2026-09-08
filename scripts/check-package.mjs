@@ -4,21 +4,33 @@ import { execFileSync } from "node:child_process";
 
 const root = process.cwd();
 
+/**
+ * @typedef {{ path: string }} PackedFile
+ * @typedef {{ files?: PackedFile[] }} PackReport
+ * @typedef {{ name?: string, license?: string }} PackageMetadata
+ */
+
+/**
+ * @param {string} value
+ * @param {string} label
+ * @param {unknown} fallback
+ * @returns {unknown}
+ */
 function parseJson(value, label, fallback) {
   try {
     return JSON.parse(value);
   } catch (error) {
-    console.error(`Unable to parse ${label}: ${error.message}`);
+    process.stderr.write(`Unable to parse ${label}: ${error.message}\n`);
     process.exitCode = 1;
     return fallback;
   }
 }
 
-const packageJson = parseJson(
+const packageJson = /** @type {PackageMetadata} */ (parseJson(
   fs.readFileSync(path.join(root, "package.json"), "utf8"),
   "package.json",
   {},
-);
+));
 
 const expectedFiles = new Set([
   "LICENSE",
@@ -40,7 +52,7 @@ const expectedFiles = new Set([
   "src/state.mjs",
 ]);
 
-const packageReport = parseJson(
+const packageReport = /** @type {PackReport[]} */ (parseJson(
   execFileSync("npm", ["pack", "--dry-run", "--json"], {
     cwd: root,
     encoding: "utf8",
@@ -48,7 +60,7 @@ const packageReport = parseJson(
   }),
   "npm pack report",
   [],
-);
+));
 const packedFiles = new Set(
   packageReport.flatMap((entry) => entry.files ?? []).map((file) => file.path),
 );
@@ -61,14 +73,18 @@ const missingFiles = [...expectedFiles].filter(
 );
 if (unexpectedFiles.length > 0 || missingFiles.length > 0) {
   if (unexpectedFiles.length > 0)
-    console.error(`Unexpected package files:\n${unexpectedFiles.join("\n")}`);
+    process.stderr.write(
+      `Unexpected package files:\n${unexpectedFiles.join("\n")}\n`,
+    );
   if (missingFiles.length > 0)
-    console.error(`Missing package files:\n${missingFiles.join("\n")}`);
+    process.stderr.write(
+      `Missing package files:\n${missingFiles.join("\n")}\n`,
+    );
   process.exitCode = 1;
 }
 
 const userPathSegment = ["User", "s"].join("");
-const homePathSegment = ["hom", "e"].join("");
+const homePathSegment = ["ho", "me"].join("");
 const privateKeyKinds = ["RSA", "OPENSSH", "EC", "DSA", "PRIVATE"].join("|");
 const credentialPrefixes = [
   ["gh", "p_"].join(""),
@@ -92,7 +108,9 @@ for (const file of packedFiles) {
   const content = fs.readFileSync(path.join(root, file), "utf8");
   for (const pattern of forbiddenContent) {
     if (pattern.test(content)) {
-      console.error(`Forbidden private or credential-like content in ${file}`);
+      process.stderr.write(
+        `Forbidden private or credential-like content in ${file}\n`,
+      );
       process.exitCode = 1;
       break;
     }
@@ -100,13 +118,17 @@ for (const file of packedFiles) {
 }
 
 if (packageJson.name !== "agents-sandbox") {
-  console.error(`Unexpected package name: ${packageJson.name}`);
+  process.stderr.write(`Unexpected package name: ${packageJson.name}\n`);
   process.exitCode = 1;
 }
 if (packageJson.license !== "AGPL-3.0-only") {
-  console.error(`Unexpected package license: ${packageJson.license}`);
+  process.stderr.write(
+    `Unexpected package license: ${packageJson.license}\n`,
+  );
   process.exitCode = 1;
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log(`Package check passed: ${packedFiles.size} files, no private content.`);
+process.stdout.write(
+  `Package check passed: ${packedFiles.size} files, no private content.\n`,
+);
