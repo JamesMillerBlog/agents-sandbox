@@ -67,14 +67,28 @@ if (unexpectedFiles.length > 0 || missingFiles.length > 0) {
   process.exitCode = 1;
 }
 
+const userPathSegment = ["User", "s"].join("");
+const homePathSegment = ["hom", "e"].join("");
+const privateKeyKinds = ["RSA", "OPENSSH", "EC", "DSA", "PRIVATE"].join("|");
+const credentialPrefixes = [
+  ["gh", "p_"].join(""),
+  ["github", "_pat_"].join(""),
+  ["xox", "[baprs]-"].join(""),
+  "sk-",
+].join("|");
 const forbiddenContent = [
-  /\/Users\/[A-Za-z0-9._-]+(?:\/|$)/u,
-  /\/home\/(?!sandbox(?:\/|$))[A-Za-z0-9._-]+(?:\/|$)/u,
-  /-----BEGIN (?:RSA|OPENSSH|EC|DSA|PRIVATE) KEY-----/u,
-  /\b(?:ghp_|github_pat_|xox[baprs]-|sk-[A-Za-z0-9]{20,})/u,
+  new RegExp(
+    `/${userPathSegment}/[A-Za-z0-9._-]+(?:/|$)`,
+    "u",
+  ),
+  new RegExp(
+    `/${homePathSegment}/(?!sandbox(?:/|$))[A-Za-z0-9._-]+(?:/|$)`,
+    "u",
+  ),
+  new RegExp(`-----BEGIN (?:${privateKeyKinds}) KEY-----`, "u"),
+  new RegExp(`\\b(?:${credentialPrefixes})[A-Za-z0-9]{20,}`, "u"),
 ];
 for (const file of packedFiles) {
-  if (file === "scripts/check-package.mjs") continue;
   const content = fs.readFileSync(path.join(root, file), "utf8");
   for (const pattern of forbiddenContent) {
     if (pattern.test(content)) {

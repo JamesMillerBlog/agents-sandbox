@@ -61,7 +61,10 @@ jobs:
           curl --fail --silent --show-error --location --remote-name \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
           sha256sum --check --ignore-missing "gitleaks_${GITLEAKS_VERSION}_checksums.txt"
-          tar -xzf "$archive" -C /usr/local/bin gitleaks
+          install_dir="$RUNNER_TEMP/gitleaks"
+          mkdir -p "$install_dir"
+          tar -xzf "$archive" -C "$install_dir" gitleaks
+          echo "$install_dir" >> "$GITHUB_PATH"
           rm "$archive" "gitleaks_${GITLEAKS_VERSION}_checksums.txt"
 
       - name: Scan repository history
