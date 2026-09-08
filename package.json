@@ -23,6 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "check:syntax": "node scripts/check-syntax.mjs",
+    "check:package": "node scripts/check-package.mjs",
     "pack:check": "npm pack --dry-run"
   },
   "devDependencies": {
