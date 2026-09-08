@@ -7,7 +7,7 @@ const root = process.cwd();
 /**
  * @typedef {{ path: string }} PackedFile
  * @typedef {{ files?: PackedFile[] }} PackReport
- * @typedef {{ name?: string, license?: string }} PackageMetadata
+ * @typedef {{ name?: string, license?: string, repository?: { url?: string } }} PackageMetadata
  */
 
 /**
@@ -26,11 +26,13 @@ function parseJson(value, label, fallback) {
   }
 }
 
-const packageJson = /** @type {PackageMetadata} */ (parseJson(
-  fs.readFileSync(path.join(root, "package.json"), "utf8"),
-  "package.json",
-  {},
-));
+const packageJson = /** @type {PackageMetadata} */ (
+  parseJson(
+    fs.readFileSync(path.join(root, "package.json"), "utf8"),
+    "package.json",
+    {},
+  )
+);
 
 const expectedFiles = new Set([
   "LICENSE",
@@ -42,6 +44,7 @@ const expectedFiles = new Set([
   "package.json",
   "scripts/check-syntax.mjs",
   "scripts/check-package.mjs",
+  "scripts/prepublish.mjs",
   "src/cli.mjs",
   "src/config.mjs",
   "src/docker-runner.mjs",
@@ -52,15 +55,17 @@ const expectedFiles = new Set([
   "src/state.mjs",
 ]);
 
-const packageReport = /** @type {PackReport[]} */ (parseJson(
-  execFileSync("npm", ["pack", "--dry-run", "--json"], {
-    cwd: root,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "inherit"],
-  }),
-  "npm pack report",
-  [],
-));
+const packageReport = /** @type {PackReport[]} */ (
+  parseJson(
+    execFileSync("npm", ["pack", "--dry-run", "--json"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "inherit"],
+    }),
+    "npm pack report",
+    [],
+  )
+);
 const packedFiles = new Set(
   packageReport.flatMap((entry) => entry.files ?? []).map((file) => file.path),
 );
@@ -93,10 +98,7 @@ const credentialPrefixes = [
   "sk-",
 ].join("|");
 const forbiddenContent = [
-  new RegExp(
-    `/${userPathSegment}/[A-Za-z0-9._-]+(?:/|$)`,
-    "u",
-  ),
+  new RegExp(`/${userPathSegment}/[A-Za-z0-9._-]+(?:/|$)`, "u"),
   new RegExp(
     `/${homePathSegment}/(?!sandbox(?:/|$))[A-Za-z0-9._-]+(?:/|$)`,
     "u",
@@ -122,9 +124,14 @@ if (packageJson.name !== "agents-sandbox") {
   process.exitCode = 1;
 }
 if (packageJson.license !== "AGPL-3.0-only") {
-  process.stderr.write(
-    `Unexpected package license: ${packageJson.license}\n`,
-  );
+  process.stderr.write(`Unexpected package license: ${packageJson.license}\n`);
+  process.exitCode = 1;
+}
+if (
+  packageJson.repository?.url !==
+  "git+https://github.com/JamesMillerBlog/agents-sandbox.git"
+) {
+  process.stderr.write("Unexpected package repository URL.\n");
   process.exitCode = 1;
 }
 

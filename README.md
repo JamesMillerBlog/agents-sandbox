@@ -214,3 +214,30 @@ npm run pack:check
 ```
 
 Tests inject Git and Docker runners and do not require a Docker daemon. The package has no Compose dependency for basic operation; Compose may still be used separately for project services.
+
+## Publishing
+
+Publishing requires clean, synchronized `main`. Authenticate with npm first:
+
+```sh
+npm login
+npm whoami
+```
+
+Run safe release validation without publishing:
+
+```sh
+pnpm run release:check
+```
+
+Preview the package, then publish it publicly:
+
+```sh
+pnpm publish --dry-run
+pnpm publish
+```
+
+`pnpm publish` runs `prepublishOnly`, which invokes the release checks before
+pnpm performs the actual npm publication. Publication is irreversible; this
+command does not create Git tags or GitHub Releases. Tag the merged release
+commit separately, for example `git tag -a v0.1.0 -m "Release v0.1.0"`.
