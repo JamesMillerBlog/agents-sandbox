@@ -71,7 +71,7 @@ test("repository scope can intentionally share linked worktree state", () => {
 
 test("rejects a symlinked Pi state parent before creating the root", () => {
   const parent = fs.mkdtempSync(
-    path.join(os.tmpdir(), "pi-docker-agent-state-parent-"),
+    path.join(os.tmpdir(), "agents-sandbox-state-parent-"),
   );
   const target = path.join(parent, "elsewhere");
   const dotPi = path.join(parent, ".pi");
@@ -95,7 +95,7 @@ test("rejects a symlinked Pi state parent before creating the root", () => {
 
 test("rejects a symlinked Pi sessions root", () => {
   const parent = fs.mkdtempSync(
-    path.join(os.tmpdir(), "pi-docker-agent-state-link-"),
+    path.join(os.tmpdir(), "agents-sandbox-state-link-"),
   );
   const target = path.join(parent, "target");
   const link = path.join(parent, "sessions");
@@ -118,7 +118,7 @@ test("rejects a symlinked Pi sessions root", () => {
 });
 
 test("layout scopes Pi sessions and uses persistent named volume identities", () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "pi-docker-agent-state-"));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "agents-sandbox-state-"));
   const layout = stateLayout({
     engine: "pi",
     profile: "default",
@@ -130,6 +130,6 @@ test("layout scopes Pi sessions and uses persistent named volume identities", ()
   });
   ensurePiSessionDirectory(layout);
   assert.ok(fs.statSync(layout.piSessionDir).isDirectory());
-  assert.match(layout.piVolume, /^pi-docker-agent-pi-/u);
-  assert.match(layout.claudeVolume, /^pi-docker-agent-pi-/u);
+  assert.match(layout.piVolume, /^agents-sandbox-pi-/u);
+  assert.match(layout.claudeVolume, /^agents-sandbox-pi-/u);
 });

@@ -26,7 +26,7 @@ function git(cwd, args) {
 }
 
 function repository() {
-  const parent = fs.mkdtempSync(path.join(os.tmpdir(), "pi-docker-agent-git-"));
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), "agents-sandbox-git-"));
   const root = path.join(parent, "repo");
   fs.mkdirSync(root);
   git(root, ["init", "-q"]);
@@ -64,7 +64,7 @@ test("detects linked worktrees and preserves original common metadata path", () 
 
 test("rejects a symlinked linked-worktree Git pointer", () => {
   const parent = fs.mkdtempSync(
-    path.join(os.tmpdir(), "pi-docker-agent-git-pointer-"),
+    path.join(os.tmpdir(), "agents-sandbox-git-pointer-"),
   );
   const root = path.join(parent, "repo");
   const common = path.join(parent, "common.git");
@@ -83,7 +83,7 @@ test("rejects a symlinked linked-worktree Git pointer", () => {
 
 test("reports a clear error outside Git", () => {
   const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), "pi-docker-agent-not-git-"),
+    path.join(os.tmpdir(), "agents-sandbox-not-git-"),
   );
   assert.throws(
     () => detectWorktree({ cwd: directory }),

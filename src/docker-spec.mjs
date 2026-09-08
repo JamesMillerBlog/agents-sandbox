@@ -12,8 +12,8 @@ import { SandboxError } from "./errors.mjs";
 export const DEFAULT_IMAGES = Object.freeze({
   // Local image names keep the package publisher-neutral. Set
   // AGENT_SANDBOX_PI_IMAGE / AGENT_SANDBOX_CLAUDE_IMAGE for a registry image.
-  pi: "pi-docker-agent:pi-0.84.4",
-  claude: "pi-docker-agent:claude-2.1.150",
+  pi: "agents-sandbox:pi-0.84.4",
+  claude: "agents-sandbox:claude-2.1.150",
 });
 
 export const CONTAINER_PATHS = Object.freeze({

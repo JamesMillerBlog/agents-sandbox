@@ -13,7 +13,7 @@ import {
 } from "../src/config.mjs";
 
 function tempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "pi-docker-agent-config-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "agents-sandbox-config-"));
 }
 
 test("parses security, state scope, and default read-only mounts", () => {
@@ -257,7 +257,7 @@ test("rejects symlink mount roots with trailing path syntax", () => {
 });
 
 test("does not treat descendant ENOENT as an optional scan success", () => {
-  const root = "/tmp/pi-docker-agent-scan-root";
+  const root = "/tmp/agents-sandbox-scan-root";
   const directory = { isDirectory: () => true, isSocket: () => false };
   const fileSystem = {
     lstatSync(source) {

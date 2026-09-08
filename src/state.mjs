@@ -85,8 +85,8 @@ export function stateLayout({
     piSessionHome: sessionHome,
     piSessionRoot: sessionRoot,
     piSessionDir: path.join(sessionRoot, id),
-    piVolume: `pi-docker-agent-${id}`,
-    claudeVolume: `pi-docker-agent-${id}`,
+    piVolume: `agents-sandbox-${id}`,
+    claudeVolume: `agents-sandbox-${id}`,
   };
 }
 

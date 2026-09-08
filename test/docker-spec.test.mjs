@@ -10,7 +10,7 @@ import { detectWorktree } from "../src/git-worktree.mjs";
 import { stateLayout } from "../src/state.mjs";
 
 function fixture() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-docker-agent-spec-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agents-sandbox-spec-"));
   execFileSync("git", ["init", "-q", root]);
   const worktree = detectWorktree({ cwd: root });
   const state = stateLayout({
@@ -24,7 +24,7 @@ function fixture() {
 
 function linkedFixture() {
   const root = fs.mkdtempSync(
-    path.join(os.tmpdir(), "pi-docker-agent-linked-"),
+    path.join(os.tmpdir(), "agents-sandbox-linked-"),
   );
   const common = path.join(root, "common.git");
   const linkedGitDir = path.join(common, "worktrees", "feature");

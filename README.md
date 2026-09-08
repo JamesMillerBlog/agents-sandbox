@@ -1,13 +1,13 @@
-# pi-docker-agent
+# Agents Sandbox
 
-`pi-docker-agent` provides one explicit Docker-backed CLI for running Pi or Claude Code inside the current Git worktree. It never replaces or shadows the native `pi` or `claude` commands.
+`agents-sandbox` provides one explicit Docker-backed CLI for running Pi or Claude Code inside the current Git worktree. It never replaces or shadows the native `pi` or `claude` commands.
 
 ## Install
 
 From npm:
 
 ```sh
-npm install --global pi-docker-agent
+npm install --global agents-sandbox
 ```
 
 From a local checkout while developing the package:
@@ -18,7 +18,7 @@ npm install --global /path/to/agents-sandbox
 npm link --global
 ```
 
-A local project can also depend on the checkout with `npm install /path/to/agents-sandbox`; use the installed `sandbox` binary from that project or `npx --package pi-docker-agent sandbox`.
+A local project can also depend on the checkout with `npm install /path/to/agents-sandbox`; use the installed `sandbox` binary from that project or `npx --package agents-sandbox sandbox`.
 
 The host needs Node.js 20+, Git, and Docker. Docker must be running; Compose is not required for normal operation.
 
@@ -56,8 +56,8 @@ sandbox pi --config ./custom-agent-sandbox.toml --continue
 The launcher never builds or pulls images automatically. Build the included images locally:
 
 ```sh
-docker build -f docker/Dockerfile.pi -t pi-docker-agent:pi-0.84.4 .
-docker build -f docker/Dockerfile.claude -t pi-docker-agent:claude-2.1.150 .
+docker build -f docker/Dockerfile.pi -t agents-sandbox:pi-0.84.4 .
+docker build -f docker/Dockerfile.claude -t agents-sandbox:claude-2.1.150 .
 ```
 
 The default image names are local and publisher-neutral. Use registry images explicitly when desired:
@@ -95,7 +95,7 @@ State identity uses the canonical worktree path and a stable hash. Switching bra
 Pi and Claude use different persistence mechanisms:
 
 - **Pi:** host sessions under `~/.pi/agent/sessions`, mounted into the container. Pi sessions can be resumed with `--resume`, `--continue`, `--session`, or `--session-id`. The complete sessions root is visible to the Pi container so existing sessions remain resumable; treat other sessions beneath it as sensitive.
-- **Claude Code:** a named Docker volume scoped to the worktree/profile. `docker run --rm` removes only the container, not the volume.
+- **Claude Code:** a named Docker volume scoped to the worktree/profile. `docker run --rm` removes only the container, not the volume. The `agents-sandbox` volume prefix is new; pre-release volumes are not reused automatically and remain untouched.
 
 ## Optional project configuration
 
@@ -159,6 +159,14 @@ Every run uses Docker with:
 - an explicit environment allowlist, separated by engine.
 
 Docker is the only runtime backend. There is no native-host fallback and no bubblewrap path. If Docker or its daemon is unavailable, the launcher exits with a clear error.
+
+## Licensing
+
+Agents Sandbox is licensed under the GNU Affero General Public License, version 3 only (`AGPL-3.0-only`). Commercial licensing terms are not currently published; any proprietary exception requires a separate written agreement from the relevant copyright holders.
+
+The AGPL covers this repository's code, not Claude Code, Pi, Node.js, Debian, or other third-party components used by the Dockerfiles. Do not assume this license permits redistribution or hosted commercial use of those components.
+
+External contributions are not currently accepted under a dual-licensing arrangement. A contributor policy and rights agreement must be established before accepting contributions that need future commercial relicensing.
 
 ## Development
 

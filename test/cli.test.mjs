@@ -10,7 +10,7 @@ import { detectWorktree } from "../src/git-worktree.mjs";
 import { stateLayout } from "../src/state.mjs";
 
 function repo() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-docker-agent-cli-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agents-sandbox-cli-"));
   execFileSync("git", ["init", "-q", root]);
   return root;
 }
@@ -65,7 +65,7 @@ test("main forwards resume/session flags to an injected Docker runner", async ()
   assert.equal(code, 0);
   const argv = calls[0];
   const imageIndex = argv.findIndex((entry) =>
-    entry.startsWith("pi-docker-agent:"),
+    entry.startsWith("agents-sandbox:"),
   );
   assert.deepEqual(argv.slice(imageIndex + 1), [
     "--resume",
@@ -92,7 +92,7 @@ test("main forwards direct Claude resume without a separator", async () => {
   });
   assert.equal(code, 0);
   const imageIndex = calls[0].findIndex((entry) =>
-    entry.startsWith("pi-docker-agent:"),
+    entry.startsWith("agents-sandbox:"),
   );
   assert.deepEqual(calls[0].slice(imageIndex + 1), ["--resume"]);
 });

@@ -1,5 +1,5 @@
 {
-  "name": "pi-docker-agent",
+  "name": "agents-sandbox",
   "version": "0.1.0",
   "description": "Run Pi or Claude Code in a worktree-scoped Docker sandbox",
   "type": "module",
@@ -32,5 +32,5 @@
     "globals": "^15.0.0",
     "typescript": "^5.0.0"
   },
-  "license": "MIT"
+  "license": "AGPL-3.0-only"
 }
