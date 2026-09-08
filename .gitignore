@@ -1,0 +1,10 @@
+node_modules/
+.npm/
+*.tgz
+coverage/
+.DS_Store
+.pi/
+.pi-glla/
+.env
+.env.*
+!.env.example

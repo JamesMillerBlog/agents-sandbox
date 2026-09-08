@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+# Build locally with:
+#   docker build -f docker/Dockerfile.claude -t pi-docker-agent:claude-2.1.150 .
+# The launcher never builds or pulls this image automatically.
+FROM node:22-trixie-slim@sha256:7b8a0c89c54499bee567618f96578e1a12a800f062fbdbfd1fb6a443fa6f6284
+
+ARG CLAUDE_VERSION=2.1.150
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+      build-essential ca-certificates curl git gh openssh-client python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV npm_config_update_notifier=false \
+    npm_config_fund=false \
+    npm_config_audit=false
+
+# Claude Code's package installer sets up its platform launcher; do not skip
+# package scripts for this image.
+RUN npm install --global "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
+
+RUN usermod --login sandbox --home /home/sandbox --move-home node \
+    && groupmod --new-name sandbox node \
+    && mkdir -p /home/sandbox/.claude /home/sandbox/.config /workspace \
+    && chown -R sandbox:sandbox /home/sandbox /workspace \
+    && chmod -R a+rwX /home/sandbox
+
+WORKDIR /workspace
+USER sandbox
+ENTRYPOINT ["claude"]
