@@ -51,6 +51,23 @@ sandbox pi --profile review --resume
 sandbox pi --config ./custom-agent-sandbox.toml --continue
 ```
 
+## Optional Herdr integration
+
+Herdr reporting is disabled by default. Opt in from a Herdr pane by setting the
+pane identifier and enabling the host-side adapter:
+
+```sh
+herdr pane list
+AGENT_SANDBOX_HERDR=1 HERDR_PANE_ID=1-1 sandbox pi
+AGENT_SANDBOX_HERDR=1 HERDR_PANE_ID=1-1 sandbox claude
+```
+
+The adapter invokes the host `herdr` CLI with fixed arguments to report the
+sandbox display name and coarse `working`/`idle`/`unknown` lifecycle. It does
+not mount the Herdr socket, pass `HERDR_*` variables into Docker, or grant the
+agent Herdr control. Missing or unavailable Herdr reporting emits a warning and
+does not stop the sandbox run.
+
 ## Images
 
 The launcher never builds or pulls images automatically. Build the included images locally:

@@ -5,6 +5,7 @@ import { buildDockerSpec, formatMountSummary } from "./docker-spec.mjs";
 import { runDocker, sanitizeDockerEnvironment } from "./docker-runner.mjs";
 import { detectWorktree } from "./git-worktree.mjs";
 import { ensurePiSessionDirectory, stateLayout } from "./state.mjs";
+import { createHerdrReporter } from "./herdr.mjs";
 import { SandboxError, usageError } from "./errors.mjs";
 
 export const USAGE = `Usage:
@@ -148,6 +149,7 @@ export async function main(argv, options = {}) {
     detectWorktree: detectWorktreeImpl = detectWorktree,
     buildDockerSpec: buildDockerSpecImpl = buildDockerSpec,
     ensurePiSessionDirectory: ensureSessionImpl = ensurePiSessionDirectory,
+    herdrExecFileSync,
     output = console.log,
     errorOutput = console.error,
     uid = typeof process.getuid === "function" ? process.getuid() : 1000,
@@ -199,11 +201,25 @@ export async function main(argv, options = {}) {
       home,
     });
     printMountSummary(spec, errorOutput);
-    const exitCode = await runDockerImpl(spec.argv, {
-      cwd,
-      env: sanitizeDockerEnvironment(env),
+    const herdrReporter = createHerdrReporter({
+      tool: parsed.tool,
+      worktree,
+      state,
+      env,
+      execFileSyncImpl: herdrExecFileSync,
     });
-    return typeof exitCode === "number" ? exitCode : 0;
+    herdrReporter?.start(errorOutput);
+    let exitCode;
+    try {
+      const result = await runDockerImpl(spec.argv, {
+        cwd,
+        env: sanitizeDockerEnvironment(env),
+      });
+      exitCode = typeof result === "number" ? result : 0;
+      return exitCode;
+    } finally {
+      herdrReporter?.finish(exitCode, errorOutput);
+    }
   } catch (error) {
     const message =
       error instanceof SandboxError

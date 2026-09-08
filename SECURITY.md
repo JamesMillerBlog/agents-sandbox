@@ -33,3 +33,12 @@ Git's absolute `.git` pointers continue to resolve. This is why metadata
 writes are opt-in and why an agent should not be granted Git write access just
 to edit files. Additional writable mounts cannot overlap or re-expose Git
 metadata.
+
+## Optional Herdr integration
+
+Herdr integration is host-side and disabled unless `AGENT_SANDBOX_HERDR=1` is
+set. With a valid `HERDR_PANE_ID`, the launcher invokes the fixed `herdr` CLI
+with `shell=false` to report display metadata and coarse lifecycle state. The
+Herdr Unix socket is never mounted, and `HERDR_*` variables are not included in
+the container environment. If Herdr is missing or rejects a report, the
+launcher warns and continues without integration.

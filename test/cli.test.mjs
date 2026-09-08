@@ -191,3 +191,65 @@ test("state layout used by main is worktree scoped", () => {
   });
   assert.equal(one.id, two.id);
 });
+
+test("opt-in Herdr reporting stays outside Docker", async () => {
+  const cwd = repo();
+  const herdrCalls = [];
+  let dockerArgv;
+  const code = await main(["pi", "--", "--help"], {
+    cwd,
+    home: path.dirname(cwd),
+    env: {
+      ...process.env,
+      AGENT_SANDBOX_HERDR: "1",
+      HERDR_PANE_ID: "1-1",
+      HERDR_SOCKET_PATH: "/tmp/herdr.sock",
+    },
+    herdrExecFileSync: (file, args, options) =>
+      herdrCalls.push({ file, args, options }),
+    runDocker: async (argv) => {
+      dockerArgv = argv;
+      return 0;
+    },
+    errorOutput: () => {},
+  });
+
+  assert.equal(code, 0);
+  assert.equal(herdrCalls.length, 3);
+  assert.deepEqual(
+    herdrCalls.map(({ file }) => file),
+    ["herdr", "herdr", "herdr"],
+  );
+  assert.ok(herdrCalls.every(({ options }) => options.shell === false));
+  assert.ok(
+    dockerArgv.every(
+      (argument) =>
+        !argument.includes("HERDR") && !argument.includes("herdr.sock"),
+    ),
+  );
+});
+
+test("Herdr completion is reported when Docker runner throws", async () => {
+  const cwd = repo();
+  const herdrCalls = [];
+  const output = [];
+  const code = await main(["claude", "--", "--help"], {
+    cwd,
+    home: path.dirname(cwd),
+    env: {
+      ...process.env,
+      AGENT_SANDBOX_HERDR: "1",
+      HERDR_PANE_ID: "1-1",
+    },
+    herdrExecFileSync: (file, args) => herdrCalls.push({ file, args }),
+    runDocker: async () => {
+      throw new Error("runner failed");
+    },
+    errorOutput: (line) => output.push(line),
+  });
+
+  assert.equal(code, 1);
+  assert.equal(herdrCalls.length, 3);
+  assert.ok(herdrCalls[2].args.includes("unknown"));
+  assert.ok(output.some((line) => /runner failed/.test(line)));
+});
