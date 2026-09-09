@@ -41,6 +41,7 @@ const expectedFiles = new Set([
   "bin/sandbox.mjs",
   "docker/Dockerfile.claude",
   "docker/Dockerfile.pi",
+  "docker/pi-entrypoint.sh",
   "package.json",
   "scripts/check-syntax.mjs",
   "scripts/check-package.mjs",

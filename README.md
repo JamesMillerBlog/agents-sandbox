@@ -129,6 +129,7 @@ State identity uses the canonical worktree path and a stable hash. Switching bra
 Pi and Claude use different persistence mechanisms:
 
 - **Pi:** host sessions under `~/.pi/agent/sessions`, mounted into the container. Pi sessions can be resumed with `--resume`, `--continue`, `--session`, or `--session-id`. The complete sessions root is visible to the Pi container so existing sessions remain resumable; treat other sessions beneath it as sensitive.
+- **Pi OAuth:** when `~/.pi/agent/auth.json` exists with owner-only permissions, the launcher bind-mounts that exact file read-only at a private bootstrap path. The Pi image entrypoint copies it into the writable state volume once per state volume, using a non-secret marker so stale pre-bootstrap placeholders are migrated without overwriting later OAuth refreshes. Missing or insecure auth files fail closed; auth contents and source paths are not printed. This built-in path is Pi-only; user-configured credential mounts remain rejected.
 - **Claude Code:** a named Docker volume scoped to the worktree/profile. `docker run --rm` removes only the container, not the volume. The `agents-sandbox` volume prefix is new; pre-release volumes are not reused automatically and remain untouched.
 
 ## Optional project configuration
@@ -173,10 +174,10 @@ Mount rules:
 - Unspecified modes default to `ro`; valid modes are only `ro` and `rw`.
 - `rw` means the agent can modify or delete files in that host directory.
 - Root, home directories, Docker sockets, runtime/device paths, SSH/GPG files, credential stores, environment files, and broad Pi/Claude configuration directories are rejected.
-- No arbitrary host directory is mounted automatically.
-- The final mount summary is printed before Docker starts.
+- No arbitrary host directory is mounted automatically; Pi's exact owner-only `~/.pi/agent/auth.json` is the sole built-in credential bootstrap exception.
+- The final mount summary is printed before Docker starts, with managed Pi auth redacted.
 
-Only explicitly configured mounts are added. `.devcontainer/devcontainer.json`, Compose files, `.env` files, `AGENTS.md`, `CLAUDE.md`, `.mcp.json`, and host agent settings are not blindly inherited as runtime or security policy. Select individual safe files/directories with explicit mounts when needed; sensitive paths fail closed.
+Only explicitly configured mounts and the narrow Pi auth bootstrap are added. `.devcontainer/devcontainer.json`, Compose files, `.env` files, `AGENTS.md`, `CLAUDE.md`, `.mcp.json`, and host agent settings are not blindly inherited as runtime or security policy. Select individual safe files/directories with explicit mounts when needed; sensitive paths fail closed.
 
 ## Security defaults
 
@@ -188,7 +189,7 @@ Every run uses Docker with:
 - `no-new-privileges`;
 - a non-root container user;
 - no Docker socket;
-- no unrestricted host-home, SSH, GPG, or credential mounts;
+- no unrestricted host-home, SSH, GPG, or credential mounts; Pi's exact owner-only `~/.pi/agent/auth.json` is copied through a read-only bootstrap mount only for Pi;
 - read-only Git metadata unless explicitly opted in;
 - an explicit environment allowlist, separated by engine.
 

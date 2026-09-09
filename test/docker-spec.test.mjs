@@ -5,7 +5,11 @@ import path from "node:path";
 import net from "node:net";
 import { execFileSync } from "node:child_process";
 import test from "node:test";
-import { buildDockerSpec, hostUser } from "../src/docker-spec.mjs";
+import {
+  buildDockerSpec,
+  formatMountSummary,
+  hostUser,
+} from "../src/docker-spec.mjs";
 import { detectWorktree } from "../src/git-worktree.mjs";
 import { stateLayout } from "../src/state.mjs";
 
@@ -20,6 +24,33 @@ function fixture() {
     home: root,
   });
   return { root, worktree, state };
+}
+
+function authFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agents-sandbox-auth-"));
+  const home = path.join(root, "home");
+  const repo = path.join(home, "repo");
+  const authDir = path.join(home, ".pi", "agent");
+  fs.mkdirSync(authDir, { recursive: true });
+  fs.mkdirSync(repo, { recursive: true });
+  execFileSync("git", ["init", "-q", repo]);
+  const authPath = path.join(authDir, "auth.json");
+  fs.writeFileSync(authPath, '{"provider":"test"}\n', { mode: 0o600 });
+  fs.chmodSync(authPath, 0o600);
+  const worktree = detectWorktree({ cwd: repo });
+  const piState = stateLayout({
+    engine: "pi",
+    profile: "test",
+    worktree,
+    home,
+  });
+  const claudeState = stateLayout({
+    engine: "claude",
+    profile: "test",
+    worktree,
+    home,
+  });
+  return { root, home, repo, authPath, worktree, piState, claudeState };
 }
 
 function linkedFixture() {
@@ -111,6 +142,95 @@ test("builds secure Docker argv and preserves agent argument order", () => {
     "def",
     "--continue",
   ]);
+});
+
+test("bootstraps Pi OAuth through a private read-only mount", () => {
+  const { authPath, home, worktree, piState } = authFixture();
+  const spec = buildDockerSpec({
+    tool: "pi",
+    worktree,
+    state: piState,
+    home,
+    hostEnv: { HOME: home },
+    tty: false,
+  });
+  const authMount = spec.mounts.find(
+    (mount) => mount.purpose === "pi-auth-bootstrap",
+  );
+  assert.deepEqual(authMount, {
+    type: "bind",
+    source: authPath,
+    target: "/run/agents-sandbox/pi-auth.json",
+    mode: "ro",
+    purpose: "pi-auth-bootstrap",
+    summarySource: "<managed-pi-auth>",
+  });
+  assert.ok(
+    spec.argv.some((value) =>
+      value.includes(
+        `source=${authPath},target=/run/agents-sandbox/pi-auth.json,readonly`,
+      ),
+    ),
+  );
+  const summary = formatMountSummary(spec.mounts).join("\n");
+  assert.ok(summary.includes("<managed-pi-auth> -> /run/agents-sandbox/pi-auth.json"));
+  assert.ok(!summary.includes(authPath));
+});
+
+test("does not expose Pi OAuth mount to Claude", () => {
+  const { home, worktree, claudeState } = authFixture();
+  const spec = buildDockerSpec({
+    tool: "claude",
+    worktree,
+    state: claudeState,
+    home,
+    hostEnv: { HOME: home },
+    tty: false,
+  });
+  assert.equal(
+    spec.mounts.some((mount) => mount.purpose === "pi-auth-bootstrap"),
+    false,
+  );
+  assert.equal(
+    spec.argv.some((value) => value.includes("pi-auth.json")),
+    false,
+  );
+});
+
+test("rejects insecure or symlinked Pi OAuth sources", () => {
+  const insecure = authFixture();
+  fs.chmodSync(insecure.authPath, 0o644);
+  assert.throws(
+    () =>
+      buildDockerSpec({
+        tool: "pi",
+        worktree: insecure.worktree,
+        state: insecure.piState,
+        home: insecure.home,
+        hostEnv: { HOME: insecure.home },
+        tty: false,
+      }),
+    /owner-only/,
+  );
+
+  const linked = authFixture();
+  const target = path.join(linked.root, "auth-target.json");
+  fs.writeFileSync(target, '{"provider":"test"}\n', { mode: 0o600 });
+  fs.chmodSync(target, 0o600);
+  fs.unlinkSync(linked.authPath);
+  fs.symlinkSync(target, linked.authPath);
+  assert.throws(
+    () =>
+      buildDockerSpec({
+        tool: "pi",
+        worktree: linked.worktree,
+        state: linked.piState,
+        home: linked.home,
+        hostEnv: { HOME: linked.home },
+        tty: false,
+      }),
+    /symlinked Pi auth file/,
+  );
 });
 
 test("keeps engine-specific credentials isolated", () => {
