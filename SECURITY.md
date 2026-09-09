@@ -34,6 +34,23 @@ writes are opt-in and why an agent should not be granted Git write access just
 to edit files. Additional writable mounts cannot overlap or re-expose Git
 metadata.
 
+## Pi OAuth bootstrap
+
+Pi's file-based OAuth state is the one intentional credential exception. When
+`~/.pi/agent/auth.json` exists and has no group/world permissions, the launcher
+bind-mounts that exact file read-only at `/run/agents-sandbox/pi-auth.json`.
+The Pi image entrypoint seeds `/home/sandbox/.pi/agent/auth.json` in the
+worktree/profile state volume once per volume, recording a non-secret marker.
+This migrates stale pre-bootstrap placeholders while allowing Pi to refresh
+credentials in persistent state without the host file being writable or
+re-copied on later launches.
+
+The implementation does not mount `~/.pi`, the complete agent directory, or
+any Claude credential path. It rejects missing/insecure/symlinked auth sources,
+keeps the path out of mount summaries, and does not expose auth contents in
+logs. User-configured mounts still pass through the normal dangerous-path
+rejection rules.
+
 ## Optional Herdr integration
 
 Herdr integration is host-side and disabled unless `AGENT_SANDBOX_HERDR=1` is

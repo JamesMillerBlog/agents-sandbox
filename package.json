@@ -1,6 +1,6 @@
 {
   "name": "agents-sandbox",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run Pi or Claude Code in a worktree-scoped Docker sandbox",
   "repository": {
     "type": "git",

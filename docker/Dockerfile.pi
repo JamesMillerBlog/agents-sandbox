@@ -22,10 +22,13 @@ RUN npm install --global --ignore-scripts "@earendil-works/pi-coding-agent@${PI_
 # the host uid/gid explicitly.
 RUN usermod --login sandbox --home /home/sandbox --move-home node \
     && groupmod --new-name sandbox node \
-    && mkdir -p /home/sandbox/.pi/agent /home/sandbox/.config /workspace \
+    && mkdir -p /home/sandbox/.pi/agent /home/sandbox/.config /workspace /run/agents-sandbox \
     && chown -R sandbox:sandbox /home/sandbox /workspace \
     && chmod -R a+rwX /home/sandbox
 
+COPY docker/pi-entrypoint.sh /usr/local/bin/agents-sandbox-pi-entrypoint
+RUN chmod 0755 /usr/local/bin/agents-sandbox-pi-entrypoint
+
 WORKDIR /workspace
 USER sandbox
-ENTRYPOINT ["pi"]
+ENTRYPOINT ["/usr/local/bin/agents-sandbox-pi-entrypoint"]
