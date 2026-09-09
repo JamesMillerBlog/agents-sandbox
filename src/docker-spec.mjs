@@ -23,6 +23,12 @@ export const CONTAINER_PATHS = Object.freeze({
   piSessions: "/home/sandbox/.pi/agent/sessions",
 });
 
+const PI_AUTH_BOOTSTRAP = Object.freeze({
+  target: "/run/agents-sandbox/pi-auth.json",
+  summarySource: "<managed-pi-auth>",
+  hostPath: [".pi", "agent", "auth.json"],
+});
+
 // These are intentionally explicit allowlists, not filtered copies of
 // process.env. Engine-specific credentials are never sent to the other
 // runtime merely because both tools share one launcher.
@@ -90,6 +96,44 @@ function ensureTool(tool) {
   if (tool !== "pi" && tool !== "claude") {
     throw new SandboxError(`Unsupported agent: ${tool}`, { code: "USAGE" });
   }
+}
+
+function piAuthBootstrapMount({ home, fsImpl = fs }) {
+  const source = path.join(path.resolve(home), ...PI_AUTH_BOOTSTRAP.hostPath);
+  let stat;
+  try {
+    stat = fsImpl.lstatSync(source);
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw new SandboxError(`Unable to inspect Pi auth file: ${source}`, {
+      code: "AUTH_SCAN_FAILED",
+      cause: error,
+    });
+  }
+  if (stat.isSymbolicLink?.()) {
+    throw new SandboxError(`Refusing symlinked Pi auth file: ${source}`, {
+      code: "AUTH_DANGEROUS",
+    });
+  }
+  if (!stat.isFile?.()) {
+    throw new SandboxError(`Pi auth path is not a regular file: ${source}`, {
+      code: "AUTH_DANGEROUS",
+    });
+  }
+  if (typeof stat.mode === "number" && (stat.mode & 0o077) !== 0) {
+    throw new SandboxError(
+      `Pi auth file must be owner-only (mode 0600 or stricter): ${source}`,
+      { code: "AUTH_DANGEROUS" },
+    );
+  }
+  return {
+    type: "bind",
+    source,
+    target: PI_AUTH_BOOTSTRAP.target,
+    mode: "ro",
+    purpose: "pi-auth-bootstrap",
+    summarySource: PI_AUTH_BOOTSTRAP.summarySource,
+  };
 }
 
 function rejectUnsafeWorktreeSource(worktree, { home, hostEnv }) {
@@ -410,6 +454,19 @@ export function buildDockerSpec(options = {}) {
             purpose: "claude-state-volume",
           },
         ];
+  const piAuthMount =
+    tool === "pi" ? piAuthBootstrapMount({ home, fsImpl }) : null;
+  if (piAuthMount) {
+    validateHostMountBoundary(piAuthMount.source, {
+      home,
+      additionalHomes: hostEnv?.HOME ? [hostEnv.HOME] : [],
+      label: "Pi auth source",
+    });
+    assertNoSocketDescendants(piAuthMount.source, {
+      fsImpl,
+      label: "Pi auth source",
+    });
+  }
   for (const mount of stateMounts.filter((entry) => entry.type === "bind")) {
     validateHostMountBoundary(mount.source, {
       home,
@@ -429,6 +486,7 @@ export function buildDockerSpec(options = {}) {
     CONTAINER_PATHS.workspace,
     ...(explicitSessionMount ? [] : [CONTAINER_PATHS.piSessions]),
     ...metadataMounts.map((mount) => mount.target),
+    ...(piAuthMount ? [PI_AUTH_BOOTSTRAP.target] : []),
   ]);
   const effectiveStateMounts = explicitSessionMount
     ? stateMounts.filter(
@@ -440,6 +498,7 @@ export function buildDockerSpec(options = {}) {
     workspaceMount,
     ...metadataMounts,
     ...validatedAdditional,
+    ...(piAuthMount ? [piAuthMount] : []),
     ...effectiveStateMounts.filter((mount) => mount.type === "bind"),
   ];
   const argv = [
@@ -484,6 +543,7 @@ export function buildDockerSpec(options = {}) {
       workspaceMount,
       ...metadataMounts,
       ...validatedAdditional,
+      ...(piAuthMount ? [piAuthMount] : []),
       ...effectiveStateMounts.filter((entry) => entry.type === "bind"),
     ],
     state,
@@ -497,6 +557,7 @@ export function buildDockerArgv(options) {
 export function formatMountSummary(mounts) {
   return mounts.map((mount) => {
     const mode = mount.mode ?? (mount.type === "volume" ? "rw" : "ro");
-    return `${mode} ${mount.source} -> ${mount.target}`;
+    const source = mount.summarySource ?? mount.source;
+    return `${mode} ${source} -> ${mount.target}`;
   });
 }
