@@ -1,0 +1,50 @@
+{
+  "name": "agents-sandbox",
+  "version": "0.1.0",
+  "description": "Run Pi or Claude Code in a worktree-scoped Docker sandbox",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JamesMillerBlog/agents-sandbox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JamesMillerBlog/agents-sandbox/issues"
+  },
+  "homepage": "https://github.com/JamesMillerBlog/agents-sandbox#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "bin": {
+    "sandbox": "bin/sandbox.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "scripts/",
+    "docker/",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "check:syntax": "node scripts/check-syntax.mjs",
+    "check:package": "node scripts/check-package.mjs",
+    "pack:check": "npm pack --dry-run",
+    "release:check": "node scripts/prepublish.mjs",
+    "prepublishOnly": "pnpm run release:check"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "typescript": "^5.0.0"
+  },
+  "license": "AGPL-3.0-only"
+}

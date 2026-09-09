@@ -1,0 +1,11 @@
+.git/
+.pi/
+.pi-glla/
+.DS_Store
+node_modules/
+test/
+docs/
+*.tgz
+.env
+.env.*
+!.env.example

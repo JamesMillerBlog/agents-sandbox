@@ -1,0 +1,11 @@
+.git
+.pi
+.pi-glla
+.pi-tasks
+node_modules
+coverage
+.DS_Store
+.env
+.env.*
+.agent-sandbox.toml
+*.tgz
